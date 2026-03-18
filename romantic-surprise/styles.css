@@ -552,7 +552,9 @@ body {
 }
 
 .surprise-content {
-    background: rgba(255, 255, 255, 0.95);
+    background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('img1.jpeg');
+    background-size: cover;
+    background-position: center;
     padding: 50px;
     border-radius: 20px;
     max-width: 700px;
