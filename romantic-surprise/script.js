@@ -7,7 +7,7 @@
 // ============================================
 
 // Set your special date here (Wedding day, Anniversary, etc.)
-const SPECIAL_DATE = new Date('December 25, 2026 00:00:00');
+const SPECIAL_DATE = new Date('November 15, 2026 00:00:00');
 
 // ============================================
 // DOM ELEMENTS
