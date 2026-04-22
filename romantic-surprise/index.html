@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>For My Love ❤️</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -21,7 +22,9 @@
 
     <!-- Hero Section -->
     <section class="hero" id="hero">
+        <div class="hero-bg"></div>
         <div class="hero-overlay"></div>
+        <div class="hero-petals" id="heroPetals"></div>
         <div class="hero-content">
             <h1 class="hero-title typing-effect">For the most special person in my life</h1>
             <span class="heart-icon">❤️</span>
@@ -194,6 +197,24 @@
         </div>
     </section>
 
+    <!-- Distance Visualizer Section -->
+    <section class="distance-section" id="distance">
+        <div class="container">
+            <h2 class="section-title">Connected Across The Miles</h2>
+            <p class="section-subtitle">No distance can dim what we have</p>
+            <div class="map-wrapper fade-in">
+                <div id="distanceMap"></div>
+            </div>
+            <div class="distance-info fade-in">
+                <div class="distance-value">
+                    <span id="distanceKm">—</span>
+                    <span class="distance-unit">km apart</span>
+                </div>
+                <p class="distance-message">But still connected every day ❤️</p>
+            </div>
+        </div>
+    </section>
+
     <!-- Surprise Section -->
     <section class="surprise-section" id="surprise">
         <div class="container">
@@ -243,6 +264,7 @@
         <!-- Add your own music file: <source src="your-romantic-song.mp3" type="audio/mpeg"> -->
     </audio>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

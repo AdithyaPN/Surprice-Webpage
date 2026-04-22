@@ -287,17 +287,7 @@ window.addEventListener('load', () => {
     }, 500);
 });
 
-// ============================================
-// PARALLAX EFFECT ON HERO (subtle)
-// ============================================
-window.addEventListener('scroll', () => {
-    const hero = document.querySelector('.hero');
-    const scrolled = window.pageYOffset;
-    
-    if (scrolled < window.innerHeight) {
-        hero.style.backgroundPositionY = scrolled * 0.5 + 'px';
-    }
-});
+// Parallax removed — Ken Burns animation handles hero motion.
 
 // ============================================
 // GALLERY IMAGE LIGHTBOX (Simple)
@@ -408,6 +398,168 @@ lightboxStyle.textContent = `
     }
 `;
 document.head.appendChild(lightboxStyle);
+
+// ============================================
+// HERO — FALLING PETALS
+// ============================================
+(function initHeroPetals() {
+    const container = document.getElementById('heroPetals');
+    if (!container) return;
+
+    const petals = ['🌸', '🌹', '💮', '🌺', '❤️'];
+
+    for (let i = 0; i < 18; i++) {
+        const el = document.createElement('span');
+        el.className = 'hero-petal';
+        el.textContent = petals[Math.floor(Math.random() * petals.length)];
+        el.style.left = (Math.random() * 100) + '%';
+        el.style.fontSize = (Math.random() * 14 + 12) + 'px';
+        el.style.animationDuration = (Math.random() * 8 + 8).toFixed(1) + 's';
+        el.style.animationDelay = (Math.random() * 10).toFixed(1) + 's';
+        container.appendChild(el);
+    }
+})();
+
+// ============================================
+// DISTANCE VISUALIZER
+// ============================================
+
+// Edit these coordinates to match your real locations
+const LOCATION_HIM = { lat: 13.7199, lng: 80.2286, name: 'Vishnu' };   // Sriharikotta, Andhra Pradesh
+const LOCATION_HER = { lat: 11.2588, lng: 75.7804, name: 'Adithya' };  // Kozhikode, Kerala
+
+function haversineDistance(a, b) {
+    const R = 6371;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const sinDLat = Math.sin(dLat / 2);
+    const sinDLng = Math.sin(dLng / 2);
+    const chord = sinDLat * sinDLat +
+        Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * sinDLng * sinDLng;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(chord), Math.sqrt(1 - chord)));
+}
+
+function curvedArcPoints(a, b, steps = 80) {
+    // Quadratic bezier with a perpendicular mid-point offset for a romantic arc
+    const midLat = (a.lat + b.lat) / 2;
+    const midLng = (a.lng + b.lng) / 2;
+    const dLat = b.lat - a.lat;
+    const dLng = b.lng - a.lng;
+    const ctrlLat = midLat - dLng * 0.25;
+    const ctrlLng = midLng + dLat * 0.25;
+
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const u = 1 - t;
+        pts.push([
+            u * u * a.lat + 2 * u * t * ctrlLat + t * t * b.lat,
+            u * u * a.lng + 2 * u * t * ctrlLng + t * t * b.lng
+        ]);
+    }
+    return pts;
+}
+
+function animateCount(targetKm, duration = 1800) {
+    const el = document.getElementById('distanceKm');
+    const start = performance.now();
+    function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = Math.floor(eased * targetKm).toLocaleString();
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = targetKm.toLocaleString();
+    }
+    requestAnimationFrame(step);
+}
+
+function pinIcon(name, color) {
+    return L.divIcon({
+        className: '',
+        html: `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="font-size:26px;filter:drop-shadow(0 0 6px ${color});">📍</div>
+            <div style="background:${color};color:#fff;padding:2px 10px;border-radius:20px;
+                font-family:'Cormorant Garamond',serif;font-size:13px;white-space:nowrap;
+                box-shadow:0 2px 8px rgba(0,0,0,0.3);">${name}</div>
+        </div>`,
+        iconAnchor: [13, 30],
+        iconSize: [70, 50]
+    });
+}
+
+function initDistanceMap() {
+    const map = L.map('distanceMap', {
+        zoomControl: true,
+        scrollWheelZoom: false,
+        attributionControl: true
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(map);
+
+    const bounds = L.latLngBounds(
+        [LOCATION_HIM.lat, LOCATION_HIM.lng],
+        [LOCATION_HER.lat, LOCATION_HER.lng]
+    );
+    map.fitBounds(bounds, { padding: [70, 70] });
+
+    L.marker([LOCATION_HIM.lat, LOCATION_HIM.lng], { icon: pinIcon(LOCATION_HIM.name, '#ff6b9d') }).addTo(map);
+    L.marker([LOCATION_HER.lat, LOCATION_HER.lng], { icon: pinIcon(LOCATION_HER.name, '#c44569') }).addTo(map);
+
+    const arcPoints = curvedArcPoints(LOCATION_HIM, LOCATION_HER);
+    const line = L.polyline([], {
+        color: '#ff6b9d',
+        weight: 3,
+        opacity: 0.95,
+        dashArray: '8, 6'
+    }).addTo(map);
+
+    let started = false;
+
+    function drawLine() {
+        if (started) return;
+        started = true;
+
+        let i = 0;
+        function addPoint() {
+            if (i < arcPoints.length) {
+                line.addLatLng(arcPoints[i]);
+                i++;
+                setTimeout(addPoint, 18);
+            } else {
+                const mid = arcPoints[Math.floor(arcPoints.length / 2)];
+                L.marker(mid, {
+                    icon: L.divIcon({
+                        className: '',
+                        html: '<div style="font-size:22px;">❤️</div>',
+                        iconAnchor: [11, 11]
+                    })
+                }).addTo(map);
+                animateCount(haversineDistance(LOCATION_HIM, LOCATION_HER));
+            }
+        }
+        setTimeout(addPoint, 400);
+    }
+
+    const distSection = document.getElementById('distance');
+    const distObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                drawLine();
+                distObserver.unobserve(distSection);
+            }
+        });
+    }, { threshold: 0.25 });
+
+    distObserver.observe(distSection);
+}
+
+if (document.getElementById('distanceMap')) {
+    initDistanceMap();
+}
 
 // ============================================
 // CONSOLE LOVE MESSAGE (Easter Egg)
